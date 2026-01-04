@@ -29,11 +29,8 @@ export async function GET(request: Request) {
   }
 
   if (dateStr) {
-    const date = new Date(dateStr)
-    const startOfDay = new Date(date.setHours(0, 0, 0, 0)).toISOString()
-    const endOfDay = new Date(date.setHours(23, 59, 59, 999)).toISOString()
-
-    query = query.gte('date', startOfDay).lte('date', endOfDay)
+    // DATE型なので日付文字列で直接比較
+    query = query.eq('date', dateStr)
   }
 
   const { data: meals, error } = await query
@@ -65,7 +62,7 @@ export async function POST(request: Request) {
   const { data: meal, error: mealError } = await supabase
     .from('Meal')
     .insert({
-      date: new Date(date).toISOString(),
+      date, // DATE型なのでそのまま文字列で渡す (YYYY-MM-DD)
       type,
       userId: user.id,
     })
