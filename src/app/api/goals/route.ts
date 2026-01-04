@@ -1,10 +1,16 @@
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  const goal = await prisma.dailyGoal.findFirst({
-    where: { isActive: true },
-  })
+  const { data: goal, error } = await supabase
+    .from('DailyGoal')
+    .select('*')
+    .eq('isActive', true)
+    .single()
+
+  if (error && error.code !== 'PGRST116') {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 
   // Return default keto goals if none set
   if (!goal) {
@@ -26,21 +32,27 @@ export async function POST(request: Request) {
   const { protein, fat, carbs, calories } = body
 
   // Deactivate all existing goals
-  await prisma.dailyGoal.updateMany({
-    where: { isActive: true },
-    data: { isActive: false },
-  })
+  await supabase
+    .from('DailyGoal')
+    .update({ isActive: false })
+    .eq('isActive', true)
 
   // Create new active goal
-  const goal = await prisma.dailyGoal.create({
-    data: {
+  const { data: goal, error } = await supabase
+    .from('DailyGoal')
+    .insert({
       protein: parseFloat(protein),
       fat: parseFloat(fat),
       carbs: parseFloat(carbs),
       calories: parseFloat(calories),
       isActive: true,
-    },
-  })
+    })
+    .select()
+    .single()
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 
   return NextResponse.json(goal)
 }

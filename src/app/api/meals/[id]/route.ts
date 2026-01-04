@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 import { NextResponse } from 'next/server'
 
 export async function DELETE(
@@ -7,9 +7,14 @@ export async function DELETE(
 ) {
   const { id } = await params
 
-  await prisma.meal.delete({
-    where: { id },
-  })
+  const { error } = await supabase
+    .from('Meal')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 
   return NextResponse.json({ success: true })
 }

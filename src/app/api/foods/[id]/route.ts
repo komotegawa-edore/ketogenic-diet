@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 import { NextResponse } from 'next/server'
 
 export async function DELETE(
@@ -7,9 +7,14 @@ export async function DELETE(
 ) {
   const { id } = await params
 
-  await prisma.food.delete({
-    where: { id },
-  })
+  const { error } = await supabase
+    .from('Food')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 
   return NextResponse.json({ success: true })
 }
@@ -22,16 +27,22 @@ export async function PUT(
   const body = await request.json()
   const { name, protein, fat, carbs, calories } = body
 
-  const food = await prisma.food.update({
-    where: { id },
-    data: {
+  const { data: food, error } = await supabase
+    .from('Food')
+    .update({
       name,
       protein: parseFloat(protein),
       fat: parseFloat(fat),
       carbs: parseFloat(carbs),
       calories: parseFloat(calories),
-    },
-  })
+    })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 
   return NextResponse.json(food)
 }
