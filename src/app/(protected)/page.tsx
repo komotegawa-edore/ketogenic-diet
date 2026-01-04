@@ -5,6 +5,7 @@ import MacroProgress from '@/components/MacroProgress'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useAuth } from '@/contexts/AuthContext'
+import { Sunrise, Sun, Moon, Cookie, Scale, Check, type LucideIcon } from 'lucide-react'
 
 type Goal = {
   protein: number
@@ -36,6 +37,13 @@ type WeightLog = {
   weight: number
   date: string
 }
+
+const mealTypes: { value: string; label: string; Icon: LucideIcon }[] = [
+  { value: 'breakfast', label: '朝食', Icon: Sunrise },
+  { value: 'lunch', label: '昼食', Icon: Sun },
+  { value: 'dinner', label: '夕食', Icon: Moon },
+  { value: 'snack', label: '間食', Icon: Cookie },
+]
 
 const mealTypeLabels: Record<string, string> = {
   breakfast: '朝食',
@@ -180,8 +188,10 @@ export default function Dashboard() {
       {todayWeight && (
         <div className="card mb-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">⚖️</span>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: '#5DDFC3' }}>
+                <Scale className="w-5 h-5 text-white" />
+              </div>
               <div>
                 <p className="text-sm text-gray-500">今日の体重</p>
                 <p className="text-xl font-bold" style={{ color: '#3A405A' }}>{todayWeight.weight} kg</p>
@@ -213,21 +223,21 @@ export default function Dashboard() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-4 gap-2 mb-4">
-        {['breakfast', 'lunch', 'dinner', 'snack'].map((type) => {
-          const hasRecorded = meals.some((m) => m.type === type)
+        {mealTypes.map(({ value, label, Icon }) => {
+          const hasRecorded = meals.some((m) => m.type === value)
           return (
             <Link
-              key={type}
-              href={`/meals?add=${type}`}
+              key={value}
+              href={`/meals?add=${value}`}
               className={`card text-center py-3 ${hasRecorded ? 'opacity-50' : ''}`}
             >
-              <span className="text-2xl block mb-1">
-                {type === 'breakfast' ? '🌅' : type === 'lunch' ? '☀️' : type === 'dinner' ? '🌙' : '🍪'}
-              </span>
+              <Icon className="w-6 h-6 mx-auto mb-1" style={{ color: '#5DDFC3' }} />
               <span className="text-xs" style={{ color: '#3A405A' }}>
-                {mealTypeLabels[type]}
+                {label}
               </span>
-              {hasRecorded && <span className="text-xs text-green-500 block">✓</span>}
+              {hasRecorded && (
+                <Check className="w-4 h-4 mx-auto text-green-500" />
+              )}
             </Link>
           )
         })}

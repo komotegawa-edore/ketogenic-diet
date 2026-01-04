@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { Sunrise, Sun, Moon, Cookie, type LucideIcon } from 'lucide-react'
 
 type Food = {
   id: string
@@ -27,11 +28,11 @@ type Meal = {
   foods: MealFood[]
 }
 
-const mealTypes = [
-  { value: 'breakfast', label: '朝食', icon: '🌅' },
-  { value: 'lunch', label: '昼食', icon: '☀️' },
-  { value: 'dinner', label: '夕食', icon: '🌙' },
-  { value: 'snack', label: '間食', icon: '🍪' },
+const mealTypes: { value: string; label: string; Icon: LucideIcon }[] = [
+  { value: 'breakfast', label: '朝食', Icon: Sunrise },
+  { value: 'lunch', label: '昼食', Icon: Sun },
+  { value: 'dinner', label: '夕食', Icon: Moon },
+  { value: 'snack', label: '間食', Icon: Cookie },
 ]
 
 const quickAmounts = [50, 100, 150, 200]
@@ -242,7 +243,7 @@ function MealsPageContent() {
                     }`}
                     style={mealType === t.value ? { background: '#5DDFC3' } : {}}
                   >
-                    <span className="text-xl block">{t.icon}</span>
+                    <t.Icon className="w-5 h-5 mx-auto mb-1" />
                     <span className="text-xs">{t.label}</span>
                   </button>
                 ))}
@@ -412,7 +413,7 @@ function MealsPageContent() {
               <div key={meal.id} className="card">
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xl">{mealTypeInfo?.icon}</span>
+                    {mealTypeInfo && <mealTypeInfo.Icon className="w-5 h-5" style={{ color: '#5DDFC3' }} />}
                     <h3 className="font-medium" style={{ color: '#3A405A' }}>{mealTypeInfo?.label || meal.type}</h3>
                   </div>
                   <button
