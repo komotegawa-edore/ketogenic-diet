@@ -4,6 +4,14 @@ import { NextResponse } from 'next/server'
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const dateStr = searchParams.get('date')
+  const authHeader = request.headers.get('authorization')
+
+  let userId: string | null = null
+  if (authHeader) {
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user } } = await supabase.auth.getUser(token)
+    userId = user?.id || null
+  }
 
   let query = supabase
     .from('Meal')
@@ -15,6 +23,10 @@ export async function GET(request: Request) {
       )
     `)
     .order('createdAt', { ascending: false })
+
+  if (userId) {
+    query = query.eq('userId', userId)
+  }
 
   if (dateStr) {
     const date = new Date(dateStr)
@@ -30,19 +42,32 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json(meals)
+  return NextResponse.json(meals || [])
 }
 
 export async function POST(request: Request) {
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const token = authHeader.replace('Bearer ', '')
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const body = await request.json()
   const { date, type, foods } = body
 
-  // Create meal
+  // Create meal with userId
   const { data: meal, error: mealError } = await supabase
     .from('Meal')
     .insert({
       date: new Date(date).toISOString(),
       type,
+      userId: user.id,
     })
     .select()
     .single()
@@ -52,18 +77,20 @@ export async function POST(request: Request) {
   }
 
   // Create meal foods
-  const mealFoods = foods.map((f: { foodId: string; amount: number }) => ({
-    mealId: meal.id,
-    foodId: f.foodId,
-    amount: f.amount,
-  }))
+  if (foods && foods.length > 0) {
+    const mealFoods = foods.map((f: { foodId: string; amount: number }) => ({
+      mealId: meal.id,
+      foodId: f.foodId,
+      amount: f.amount,
+    }))
 
-  const { error: mealFoodsError } = await supabase
-    .from('MealFood')
-    .insert(mealFoods)
+    const { error: mealFoodsError } = await supabase
+      .from('MealFood')
+      .insert(mealFoods)
 
-  if (mealFoodsError) {
-    return NextResponse.json({ error: mealFoodsError.message }, { status: 500 })
+    if (mealFoodsError) {
+      return NextResponse.json({ error: mealFoodsError.message }, { status: 500 })
+    }
   }
 
   // Fetch complete meal with foods
