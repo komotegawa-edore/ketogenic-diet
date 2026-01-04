@@ -1,8 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 export default function SettingsPage() {
+  const { user, signOut } = useAuth()
+  const router = useRouter()
   const [form, setForm] = useState({
     protein: '120',
     fat: '150',
@@ -41,6 +46,11 @@ export default function SettingsPage() {
     setTimeout(() => setSaved(false), 2000)
   }
 
+  const handleLogout = async () => {
+    await signOut()
+    router.push('/login')
+  }
+
   // Calculate macro ratios
   const proteinCal = parseFloat(form.protein) * 4
   const fatCal = parseFloat(form.fat) * 9
@@ -57,7 +67,24 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-800 mb-4">目標設定</h1>
+      <h1 className="text-xl font-bold text-gray-800 mb-4">設定</h1>
+
+      {/* User Info */}
+      <div className="bg-white p-4 rounded-lg shadow mb-4">
+        <div className="flex items-center gap-3 mb-3">
+          <Image src="/Roopy.png" alt="Roopy" width={48} height={48} />
+          <div>
+            <p className="font-medium text-gray-800">アカウント</p>
+            <p className="text-sm text-gray-500">{user?.email}</p>
+          </div>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="w-full text-red-500 border border-red-200 py-2 rounded-lg text-sm hover:bg-red-50 transition-colors"
+        >
+          ログアウト
+        </button>
+      </div>
 
       <div className="bg-white p-4 rounded-lg shadow mb-4">
         <h2 className="font-medium text-gray-700 mb-2">ケトジェニック比率の目安</h2>
@@ -69,6 +96,7 @@ export default function SettingsPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white p-4 rounded-lg shadow">
+        <h2 className="font-medium text-gray-700 mb-4">目標設定</h2>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

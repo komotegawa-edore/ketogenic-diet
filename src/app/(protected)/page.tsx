@@ -81,12 +81,17 @@ export default function Dashboard() {
   const fatRatio = totalCal > 0 ? (fatCal / totalCal) * 100 : 0
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-500">読み込み中...</div>
+    return (
+      <div className="text-center py-8">
+        <div className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-3" style={{ borderColor: '#5DDFC3', borderTopColor: 'transparent' }} />
+        <p className="text-gray-500">読み込み中...</p>
+      </div>
+    )
   }
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-800 mb-2">今日の記録</h1>
+      <h1 className="text-xl font-bold mb-2" style={{ color: '#3A405A' }}>今日の記録</h1>
       <p className="text-sm text-gray-500 mb-4">
         {new Date().toLocaleDateString('ja-JP', {
           year: 'numeric',
@@ -97,8 +102,8 @@ export default function Dashboard() {
       </p>
 
       {goal && (
-        <div className="bg-white p-4 rounded-lg shadow mb-4">
-          <h2 className="font-medium text-gray-700 mb-3">マクロ達成状況</h2>
+        <div className="card mb-4">
+          <h2 className="font-medium mb-3" style={{ color: '#3A405A' }}>マクロ達成状況</h2>
           <MacroProgress
             label="タンパク質"
             current={totals.protein}
@@ -126,47 +131,48 @@ export default function Dashboard() {
             current={totals.calories}
             goal={goal.calories}
             unit="kcal"
-            color="green"
+            color="teal"
           />
         </div>
       )}
 
-      <div className="bg-white p-4 rounded-lg shadow mb-4">
-        <h2 className="font-medium text-gray-700 mb-2">ケトーシス状態</h2>
+      <div className="card mb-4">
+        <h2 className="font-medium mb-2" style={{ color: '#3A405A' }}>ケトーシス状態</h2>
         {totals.carbs <= 20 ? (
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 bg-green-500 rounded-full" />
-            <span className="text-green-600 font-medium">良好</span>
+            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#5DDFC3' }} />
+            <span className="font-medium" style={{ color: '#5DDFC3' }}>良好</span>
             <span className="text-sm text-gray-500">糖質20g以下</span>
           </div>
         ) : totals.carbs <= 50 ? (
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 bg-yellow-500 rounded-full" />
-            <span className="text-yellow-600 font-medium">注意</span>
+            <span className="w-3 h-3 bg-amber-400 rounded-full" />
+            <span className="text-amber-500 font-medium">注意</span>
             <span className="text-sm text-gray-500">糖質20-50g</span>
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 bg-red-500 rounded-full" />
-            <span className="text-red-600 font-medium">ケトーシス維持困難</span>
+            <span className="w-3 h-3 bg-rose-400 rounded-full" />
+            <span className="text-rose-500 font-medium">ケトーシス維持困難</span>
             <span className="text-sm text-gray-500">糖質50g超過</span>
           </div>
         )}
 
         <div className="mt-3 text-sm text-gray-600">
           <p>
-            脂質比率: <span className={fatRatio >= 70 ? 'text-green-600 font-medium' : 'text-yellow-600'}>{fatRatio.toFixed(0)}%</span>
+            脂質比率: <span className={fatRatio >= 70 ? 'font-medium' : 'text-amber-500'} style={fatRatio >= 70 ? { color: '#5DDFC3' } : {}}>{fatRatio.toFixed(0)}%</span>
             {fatRatio >= 70 ? ' (目標達成)' : ' (目標: 70%以上)'}
           </p>
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-lg shadow">
+      <div className="card">
         <div className="flex justify-between items-center mb-3">
-          <h2 className="font-medium text-gray-700">今日の食事</h2>
+          <h2 className="font-medium" style={{ color: '#3A405A' }}>今日の食事</h2>
           <Link
             href="/meals"
-            className="text-green-600 text-sm hover:text-green-700"
+            className="text-sm font-medium hover:opacity-80 transition-opacity"
+            style={{ color: '#5DDFC3' }}
           >
             + 追加
           </Link>
@@ -189,9 +195,9 @@ export default function Dashboard() {
               return (
                 <div
                   key={meal.id}
-                  className="flex justify-between items-center py-2 border-b last:border-0"
+                  className="flex justify-between items-center py-2 border-b last:border-0 border-gray-100"
                 >
-                  <span className="text-gray-700">
+                  <span style={{ color: '#3A405A' }}>
                     {mealTypeLabels[meal.type] || meal.type}
                   </span>
                   <span className="text-sm text-gray-500">
