@@ -2,14 +2,23 @@
 -- Roopy Diet - Complete Database Schema
 -- ============================================
 -- Supabase SQL Editorでこのファイルを実行してください
--- https://supabase.com/dashboard/project/YOUR_PROJECT_ID/sql/new
 
 -- ============================================
--- 1. テーブル作成
+-- 1. 既存テーブルとポリシーを削除（クリーンスタート）
+-- ============================================
+DROP TABLE IF EXISTS "MealFood" CASCADE;
+DROP TABLE IF EXISTS "Meal" CASCADE;
+DROP TABLE IF EXISTS "Food" CASCADE;
+DROP TABLE IF EXISTS "DailyGoal" CASCADE;
+DROP TABLE IF EXISTS "UserProfile" CASCADE;
+DROP TABLE IF EXISTS "WeightLog" CASCADE;
+
+-- ============================================
+-- 2. テーブル作成
 -- ============================================
 
 -- Food テーブル（食品マスタ）
-CREATE TABLE IF NOT EXISTS "Food" (
+CREATE TABLE "Food" (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   name TEXT NOT NULL,
   protein FLOAT NOT NULL DEFAULT 0,
@@ -22,7 +31,7 @@ CREATE TABLE IF NOT EXISTS "Food" (
 );
 
 -- DailyGoal テーブル（目標設定）
-CREATE TABLE IF NOT EXISTS "DailyGoal" (
+CREATE TABLE "DailyGoal" (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   "userId" UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   protein FLOAT NOT NULL DEFAULT 120,
@@ -34,29 +43,29 @@ CREATE TABLE IF NOT EXISTS "DailyGoal" (
 );
 
 -- Meal テーブル（食事記録）
-CREATE TABLE IF NOT EXISTS "Meal" (
+CREATE TABLE "Meal" (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   "userId" UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   date DATE NOT NULL DEFAULT CURRENT_DATE,
-  type TEXT NOT NULL, -- breakfast, lunch, dinner, snack
+  type TEXT NOT NULL,
   "createdAt" TIMESTAMPTZ DEFAULT now()
 );
 
 -- MealFood テーブル（食事に含まれる食品）
-CREATE TABLE IF NOT EXISTS "MealFood" (
+CREATE TABLE "MealFood" (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   "mealId" TEXT NOT NULL REFERENCES "Meal"(id) ON DELETE CASCADE,
   "foodId" TEXT NOT NULL REFERENCES "Food"(id) ON DELETE CASCADE,
-  amount FLOAT NOT NULL DEFAULT 100, -- grams
+  amount FLOAT NOT NULL DEFAULT 100,
   "createdAt" TIMESTAMPTZ DEFAULT now()
 );
 
 -- UserProfile テーブル（ユーザープロフィール）
-CREATE TABLE IF NOT EXISTS "UserProfile" (
+CREATE TABLE "UserProfile" (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   "userId" UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  height FLOAT, -- cm
-  "targetWeight" FLOAT, -- kg
+  height FLOAT,
+  "targetWeight" FLOAT,
   "activityLevel" TEXT DEFAULT 'moderate',
   gender TEXT,
   "birthDate" DATE,
@@ -66,7 +75,7 @@ CREATE TABLE IF NOT EXISTS "UserProfile" (
 );
 
 -- WeightLog テーブル（体重記録）
-CREATE TABLE IF NOT EXISTS "WeightLog" (
+CREATE TABLE "WeightLog" (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   "userId" UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   weight FLOAT NOT NULL,
@@ -77,7 +86,7 @@ CREATE TABLE IF NOT EXISTS "WeightLog" (
 );
 
 -- ============================================
--- 2. Row Level Security (RLS) 有効化
+-- 3. Row Level Security (RLS) 有効化
 -- ============================================
 
 ALTER TABLE "Food" ENABLE ROW LEVEL SECURITY;
@@ -88,56 +97,39 @@ ALTER TABLE "UserProfile" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "WeightLog" ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
--- 3. RLS ポリシー作成
+-- 4. RLS ポリシー作成
 -- ============================================
 
 -- Food ポリシー
-DROP POLICY IF EXISTS "Anyone can view system foods" ON "Food";
-DROP POLICY IF EXISTS "Users can view own custom foods" ON "Food";
-DROP POLICY IF EXISTS "Users can insert custom foods" ON "Food";
-DROP POLICY IF EXISTS "Users can update own custom foods" ON "Food";
-DROP POLICY IF EXISTS "Users can delete own custom foods" ON "Food";
-
-CREATE POLICY "Anyone can view system foods" ON "Food"
+CREATE POLICY "food_select" ON "Food"
   FOR SELECT USING ("userId" IS NULL OR auth.uid() = "userId");
-CREATE POLICY "Users can insert custom foods" ON "Food"
+CREATE POLICY "food_insert" ON "Food"
   FOR INSERT WITH CHECK (auth.uid() = "userId" AND "isCustom" = true);
-CREATE POLICY "Users can update own custom foods" ON "Food"
+CREATE POLICY "food_update" ON "Food"
   FOR UPDATE USING (auth.uid() = "userId" AND "isCustom" = true);
-CREATE POLICY "Users can delete own custom foods" ON "Food"
+CREATE POLICY "food_delete" ON "Food"
   FOR DELETE USING (auth.uid() = "userId" AND "isCustom" = true);
 
 -- DailyGoal ポリシー
-DROP POLICY IF EXISTS "Users can view own goals" ON "DailyGoal";
-DROP POLICY IF EXISTS "Users can insert own goals" ON "DailyGoal";
-DROP POLICY IF EXISTS "Users can update own goals" ON "DailyGoal";
-
-CREATE POLICY "Users can view own goals" ON "DailyGoal"
+CREATE POLICY "goal_select" ON "DailyGoal"
   FOR SELECT USING (auth.uid() = "userId" OR "userId" IS NULL);
-CREATE POLICY "Users can insert own goals" ON "DailyGoal"
+CREATE POLICY "goal_insert" ON "DailyGoal"
   FOR INSERT WITH CHECK (auth.uid() = "userId");
-CREATE POLICY "Users can update own goals" ON "DailyGoal"
+CREATE POLICY "goal_update" ON "DailyGoal"
   FOR UPDATE USING (auth.uid() = "userId");
 
 -- Meal ポリシー
-DROP POLICY IF EXISTS "Users can view own meals" ON "Meal";
-DROP POLICY IF EXISTS "Users can insert own meals" ON "Meal";
-DROP POLICY IF EXISTS "Users can update own meals" ON "Meal";
-DROP POLICY IF EXISTS "Users can delete own meals" ON "Meal";
-
-CREATE POLICY "Users can view own meals" ON "Meal"
+CREATE POLICY "meal_select" ON "Meal"
   FOR SELECT USING (auth.uid() = "userId");
-CREATE POLICY "Users can insert own meals" ON "Meal"
+CREATE POLICY "meal_insert" ON "Meal"
   FOR INSERT WITH CHECK (auth.uid() = "userId");
-CREATE POLICY "Users can update own meals" ON "Meal"
+CREATE POLICY "meal_update" ON "Meal"
   FOR UPDATE USING (auth.uid() = "userId");
-CREATE POLICY "Users can delete own meals" ON "Meal"
+CREATE POLICY "meal_delete" ON "Meal"
   FOR DELETE USING (auth.uid() = "userId");
 
 -- MealFood ポリシー
-DROP POLICY IF EXISTS "Users can manage own meal foods" ON "MealFood";
-
-CREATE POLICY "Users can manage meal foods" ON "MealFood"
+CREATE POLICY "mealfood_all" ON "MealFood"
   FOR ALL USING (
     EXISTS (
       SELECT 1 FROM "Meal" WHERE "Meal".id = "MealFood"."mealId" AND "Meal"."userId" = auth.uid()
@@ -145,41 +137,32 @@ CREATE POLICY "Users can manage meal foods" ON "MealFood"
   );
 
 -- UserProfile ポリシー
-DROP POLICY IF EXISTS "Users can view own profile" ON "UserProfile";
-DROP POLICY IF EXISTS "Users can insert own profile" ON "UserProfile";
-DROP POLICY IF EXISTS "Users can update own profile" ON "UserProfile";
-
-CREATE POLICY "Users can view own profile" ON "UserProfile"
+CREATE POLICY "profile_select" ON "UserProfile"
   FOR SELECT USING (auth.uid() = "userId");
-CREATE POLICY "Users can insert own profile" ON "UserProfile"
+CREATE POLICY "profile_insert" ON "UserProfile"
   FOR INSERT WITH CHECK (auth.uid() = "userId");
-CREATE POLICY "Users can update own profile" ON "UserProfile"
+CREATE POLICY "profile_update" ON "UserProfile"
   FOR UPDATE USING (auth.uid() = "userId");
 
 -- WeightLog ポリシー
-DROP POLICY IF EXISTS "Users can view own weight logs" ON "WeightLog";
-DROP POLICY IF EXISTS "Users can insert own weight logs" ON "WeightLog";
-DROP POLICY IF EXISTS "Users can update own weight logs" ON "WeightLog";
-DROP POLICY IF EXISTS "Users can delete own weight logs" ON "WeightLog";
-
-CREATE POLICY "Users can view own weight logs" ON "WeightLog"
+CREATE POLICY "weight_select" ON "WeightLog"
   FOR SELECT USING (auth.uid() = "userId");
-CREATE POLICY "Users can insert own weight logs" ON "WeightLog"
+CREATE POLICY "weight_insert" ON "WeightLog"
   FOR INSERT WITH CHECK (auth.uid() = "userId");
-CREATE POLICY "Users can update own weight logs" ON "WeightLog"
+CREATE POLICY "weight_update" ON "WeightLog"
   FOR UPDATE USING (auth.uid() = "userId");
-CREATE POLICY "Users can delete own weight logs" ON "WeightLog"
+CREATE POLICY "weight_delete" ON "WeightLog"
   FOR DELETE USING (auth.uid() = "userId");
 
 -- ============================================
--- 4. インデックス作成
+-- 5. インデックス作成
 -- ============================================
 
-CREATE INDEX IF NOT EXISTS idx_food_user ON "Food"("userId");
-CREATE INDEX IF NOT EXISTS idx_food_name ON "Food"(name);
-CREATE INDEX IF NOT EXISTS idx_food_custom ON "Food"("isCustom");
-CREATE INDEX IF NOT EXISTS idx_meal_user_date ON "Meal"("userId", date DESC);
-CREATE INDEX IF NOT EXISTS idx_mealfood_meal ON "MealFood"("mealId");
-CREATE INDEX IF NOT EXISTS idx_dailygoal_user ON "DailyGoal"("userId", "isActive");
-CREATE INDEX IF NOT EXISTS idx_weightlog_user_date ON "WeightLog"("userId", date DESC);
-CREATE INDEX IF NOT EXISTS idx_userprofile_user ON "UserProfile"("userId");
+CREATE INDEX idx_food_user ON "Food"("userId");
+CREATE INDEX idx_food_name ON "Food"(name);
+CREATE INDEX idx_food_custom ON "Food"("isCustom");
+CREATE INDEX idx_meal_user_date ON "Meal"("userId", date DESC);
+CREATE INDEX idx_mealfood_meal ON "MealFood"("mealId");
+CREATE INDEX idx_dailygoal_user ON "DailyGoal"("userId", "isActive");
+CREATE INDEX idx_weightlog_user_date ON "WeightLog"("userId", date DESC);
+CREATE INDEX idx_userprofile_user ON "UserProfile"("userId");
